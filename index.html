@@ -272,7 +272,7 @@
     <script>
       const sheetURL =
         "https://script.google.com/macros/s/AKfycbyVYcmGn3SpPlwwM6B08e2YwQ5Rhqlh6w-19cJsNcibscrzfuNmEue1B1zd-cTzj5SIbw/exec"; // Ganti sesuai Web App kamu
-      let currentNama = "";
+      let currentNama = localStorage.getItem("nama") || "";
 
       function register() {
         const nama = document.getElementById("nama").value;
@@ -284,7 +284,7 @@
           return;
         }
 
-        currentNama = nama;
+        localStorage.setItem("nama", nama);
 
         fetch(sheetURL, {
           method: "POST",
@@ -334,17 +334,27 @@
               followCount[fd[0]]++;
             });
 
-            data.users.forEach((user) => {
-              const nama = user.Nama;
-              div.innerHTML += `
-          <div class="user-card">
-            <strong>${nama}</strong><br>
-            IG: <a href="https://instagram.com/${user.Instagram}" target="_blank">@${user.Instagram}</a><br>
-            TikTok: <a href="https://tiktok.com/@${user.TikTok}" target="_blank">@${user.TikTok}</a><br>
-            <button onclick="markFollow('${nama}')">Saya sudah follow</button>
-          </div>
-        `;
-            });
+            data.users.forEach(user => {
+  const nama = user.Nama;
+
+  if (nama === currentNama) return; // Jangan tampilkan diri sendiri
+
+  // Cek apakah current user sudah follow dia
+  const sudahFollow = data.followData.some(fd => fd[0] === currentNama && fd[1] === nama);
+
+  div.innerHTML += `
+    <div class="user-card">
+      <strong>${nama}</strong><br>
+      IG: <a href="https://instagram.com/${user.Instagram}" target="_blank">@${user.Instagram}</a><br>
+      TikTok: <a href="https://tiktok.com/@${user.TikTok}" target="_blank">@${user.TikTok}</a><br>
+      ${
+        sudahFollow
+          ? `<button disabled style="background-color: #ccc;">✅ Sudah di-follow</button>`
+          : `<button onclick="markFollow('${nama}')">Saya sudah follow</button>`
+      }
+    </div>
+  `;
+});
 
             // Tampilkan leaderboard
             const sorted = Object.entries(followCount).sort(
