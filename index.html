@@ -190,6 +190,68 @@
         background-color: #eef2ff;
       }
 
+      /* Tambahkan di bagian CSS */
+      .scroll-container {
+        max-height: 400px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        padding-right: 8px;
+        margin-bottom: 1.5rem;
+        border-radius: var(--border-radius);
+      }
+
+      /* Animasi scroll reveal */
+      @keyframes scrollReveal {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .user-card {
+        animation: scrollReveal 0.5s ease forwards;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 8px var(--shadow);
+        transition: var(--transition);
+      }
+
+      .user-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Styling untuk tombol di user card */
+      .user-card button {
+        margin: 10px 0 0 0;
+        padding: 8px 12px;
+        width: auto;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+      }
+
+      .user-card button:disabled {
+        background: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Scroll snapping untuk pengalaman lebih baik */
+      .scroll-container {
+        scroll-snap-type: y proximity;
+      }
+
+      .user-card {
+        scroll-snap-align: start;
+      }
+
       /* Leaderboard Container Styling */
       .leaderboard {
         position: relative;
@@ -397,20 +459,20 @@
         <input
           type="text"
           id="ig"
-          placeholder="Username Instagram Tidak menggunakan @ " />
+          placeholder="Username Instagram Tidak usah menggunakan @ " />
         <input
           type="text"
           id="tiktok"
-          placeholder="Username TikTok Tidak menggunakan @ " />
+          placeholder="Username TikTok Tidak usah menggunakan @ " />
         <button onclick="register()">Daftar</button>
       </div>
 
       <h3>Daftar Mahasiswa</h3>
-      <div id="userList"></div>
+      <div class="scroll-container" id="userList"></div>
 
       <h3 class="leaderboard-title">Leaderboard - Siapa Paling Aktif Follow</h3>
       <div class="leaderboard" id="leaderboardContainer">
-        <div id="leaderboardList"></div>
+        <div class="scroll-container" id="leaderboardList"></div>
       </div>
     </div>
 
@@ -489,55 +551,68 @@
               followCount[fd[0]]++;
             });
 
-            data.users.forEach((user) => {
+            // Filter dan urutkan user
+            const filteredUsers = data.users
+              .filter((user) => user.Nama !== currentNama)
+              .sort((a, b) => a.Nama.localeCompare(b.Nama));
+
+            filteredUsers.forEach((user, index) => {
               const nama = user.Nama;
-
-              if (nama === currentNama) return; // Jangan tampilkan diri sendiri
-
-              // Cek apakah current user sudah follow dia
               const sudahFollow = data.followData.some(
                 (fd) => fd[0] === currentNama && fd[1] === nama
               );
 
-              div.innerHTML += `
-                <div class="user-card">
-                  <strong>${nama}</strong><br>
-                  IG: <a href="https://instagram.com/${
-                    user.Instagram
-                  }" target="_blank">@${user.Instagram}</a><br>
-                  TikTok: <a href="https://tiktok.com/@${
-                    user.TikTok
-                  }" target="_blank">@${user.TikTok}</a><br>
-                  ${
-                    sudahFollow
-                      ? `<button disabled style="background-color: #ccc;">✅ Sudah di-follow</button>`
-                      : `<button onclick="markFollow('${nama}')">Saya sudah follow</button>`
-                  }
-                </div>
-              `;
+              const userCard = document.createElement("div");
+              userCard.className = "user-card";
+              userCard.style.animationDelay = `${index * 0.1}s`;
+
+              userCard.innerHTML = `
+          <strong>${nama}</strong><br>
+          IG: <a href="https://instagram.com/${
+            user.Instagram
+          }" target="_blank">@${user.Instagram}</a><br>
+          TikTok: <a href="https://tiktok.com/@${
+            user.TikTok
+          }" target="_blank">@${user.TikTok}</a><br>
+          ${
+            sudahFollow
+              ? `<button disabled style="background-color: #ccc;">✅ Sudah di-follow</button>`
+              : `<button onclick="markFollow('${nama}')">Saya sudah follow</button>`
+          }
+        `;
+
+              div.appendChild(userCard);
             });
 
-            // Tampilkan leaderboard
+            // Leaderboard
             const sorted = Object.entries(followCount).sort(
               (a, b) => b[1] - a[1]
             );
             const leaderboard = document.getElementById("leaderboardList");
-            leaderboard.innerHTML = sorted
-              .map(
-                ([nama, count], i) =>
-                  `<div class="leaderboard-entry">
-                    <div class="rank">${i + 1}</div>
-                    <div class="username">${nama}</div>
-                    <div class="score">${count} akun difollow</div>
-                  </div>`
-              )
-              .join("");
+            leaderboard.innerHTML = "";
 
-            // Jika data kosong, tampilkan pesan
             if (sorted.length === 0) {
               leaderboard.innerHTML =
                 '<div class="empty-leaderboard">Belum ada data leaderboard</div>';
+            } else {
+              sorted.forEach(([nama, count], i) => {
+                const entry = document.createElement("div");
+                entry.className = "leaderboard-entry";
+                entry.style.animationDelay = `${i * 0.1}s`;
+                entry.innerHTML = `
+            <div class="rank">${i + 1}</div>
+            <div class="username">${nama}</div>
+            <div class="score">${count} akun difollow</div>
+          `;
+                leaderboard.appendChild(entry);
+              });
             }
+
+            // Scroll otomatis ke atas ketika data dimuat
+            setTimeout(() => {
+              div.scrollTo({ top: 0, behavior: "smooth" });
+              leaderboard.scrollTo({ top: 0, behavior: "smooth" });
+            }, 300);
           })
           .catch((error) => {
             console.error("Error:", error);
